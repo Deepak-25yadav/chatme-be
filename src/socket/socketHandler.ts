@@ -17,18 +17,24 @@ const socketHandler = (io: Server) => {
       try {
         socket.userId = data.userId;
         
-        // Update or create user
-        await User.findOneAndUpdate(
-          { userId: data.userId },
-          {
-            userId: data.userId,
-            name: data.name,
-            isOnline: true,
-            socketId: socket.id,
-            lastSeen: new Date()
-          },
-          { upsert: true, new: true }
-        );
+        // Check if user exists (authenticated user)
+        const existingUser = await User.findOne({ userId: data.userId });
+        
+        if (existingUser) {
+          // Update existing user (don't touch email field)
+          await User.findOneAndUpdate(
+            { userId: data.userId },
+            {
+              isOnline: true,
+              socketId: socket.id,
+              lastSeen: new Date()
+            }
+          );
+        } else {
+          // For backward compatibility with old users (no auth)
+          // This shouldn't happen in the new system, but keeping for safety
+          console.warn('User joining without authentication:', data.userId);
+        }
 
         // Join user's personal room
         socket.join(data.userId);

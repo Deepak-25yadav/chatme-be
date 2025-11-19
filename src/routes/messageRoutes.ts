@@ -10,7 +10,19 @@ const router = express.Router();
 router.get('/history/:userId1/:userId2', async (req: Request, res: Response) => {
   try {
     const { userId1, userId2 } = req.params;
+    const limit = parseInt(req.query.limit as string) || 50; // Default 50 messages
+    const skip = parseInt(req.query.skip as string) || 0; // Default skip 0
     const chatRoomId = generateChatRoomId(userId1, userId2);
+
+    // Get total count
+    const totalCount = await Message.countDocuments({
+      chatRoomId,
+      deleteType: { $ne: 'for_both' },
+      $or: [
+        { deletedFor: { $ne: userId1 } },
+        { deletedFor: { $size: 0 } }
+      ]
+    });
 
     const messages = await Message.find({
       chatRoomId,
@@ -21,9 +33,20 @@ router.get('/history/:userId1/:userId2', async (req: Request, res: Response) => 
       ]
     })
       .populate('replyTo')
-      .sort({ timestamp: 1 });
+      .sort({ timestamp: -1 }) // Sort descending for pagination
+      .skip(skip)
+      .limit(limit);
 
-    res.json(messages);
+    // Reverse to show oldest first
+    messages.reverse();
+
+    res.json({
+      messages,
+      total: totalCount,
+      limit,
+      skip,
+      hasMore: skip + messages.length < totalCount
+    });
   } catch (error) {
     console.error('Error fetching chat history:', error);
     res.status(500).json({ error: 'Failed to fetch chat history' });

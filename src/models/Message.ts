@@ -23,6 +23,13 @@ export interface IMessage extends Document {
   isEdited: boolean;
   deletedFor: string[]; // Array of user IDs who deleted this message
   deleteType: DeleteType;
+  attachments?: {
+    filename: string;
+    originalName: string;
+    mimetype: string;
+    size: number;
+    url: string;
+  }[];
 }
 
 const MessageSchema: Schema = new Schema({
@@ -35,7 +42,14 @@ const MessageSchema: Schema = new Schema({
   replyTo: { type: Schema.Types.ObjectId, ref: 'Message' },
   isEdited: { type: Boolean, default: false },
   deletedFor: [{ type: String }],
-  deleteType: { type: String, enum: Object.values(DeleteType), default: DeleteType.NONE }
+  deleteType: { type: String, enum: Object.values(DeleteType), default: DeleteType.NONE },
+  attachments: [{
+    filename: { type: String },
+    originalName: { type: String },
+    mimetype: { type: String },
+    size: { type: Number },
+    url: { type: String }
+  }]
 }, {
   timestamps: true
 });
