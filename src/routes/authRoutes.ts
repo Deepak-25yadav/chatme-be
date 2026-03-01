@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import User, { UserRole } from '../models/User';
 import { generateToken, generateRefreshToken, authenticateToken, AuthRequest } from '../middleware/auth.middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { notifyAdminSignup, notifyAdminLogin, notifyAdminLogout } from '../services/emailService';
 
 const router = express.Router();
 
@@ -50,13 +51,15 @@ router.post('/signup', async (req: Request, res: Response) => {
     // Generate unique userId
     const userId = uuidv4();
 
-    // Create new user
+    // Create new user — always 'user' role, chatAccess false by default
+    // Admin can later change role to 'vip' and chatAccess to true via DB / admin panel
     const user = new User({
       userId,
       name,
       email,
-      password, // Will be hashed by pre-save hook
+      password,
       role: role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.USER,
+      chatAccess: false,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
     });
 
@@ -74,15 +77,19 @@ router.post('/signup', async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'User registered successfully',
       user: {
-        userId: user.userId,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar
+        userId:     user.userId,
+        name:       user.name,
+        email:      user.email,
+        role:       user.role,
+        chatAccess: user.chatAccess,
+        avatar:     user.avatar
       },
       token,
       refreshToken
     });
+
+    // ── Non-blocking email to admin ───────────────────────────────────────
+    notifyAdminSignup({ name: user.name, email: user.email, role: user.role });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ error: 'Failed to register user' });
@@ -126,17 +133,21 @@ router.post('/login', async (req: Request, res: Response) => {
     res.json({
       message: 'Login successful',
       user: {
-        userId: user.userId,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen
+        userId:     user.userId,
+        name:       user.name,
+        email:      user.email,
+        role:       user.role,
+        chatAccess: user.chatAccess,
+        avatar:     user.avatar,
+        isOnline:   user.isOnline,
+        lastSeen:   user.lastSeen
       },
       token,
       refreshToken
     });
+
+    // ── Non-blocking email to admin ───────────────────────────────────────
+    notifyAdminLogin({ name: user.name, email: user.email, role: user.role, chatAccess: user.chatAccess });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Failed to login' });
@@ -152,12 +163,17 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res: Response
     }
 
     // Clear refresh token
-    await User.findOneAndUpdate(
+    const loggedOutUser = await User.findOneAndUpdate(
       { userId: req.user.userId },
       { refreshToken: null }
     );
 
     res.json({ message: 'Logout successful' });
+
+    // ── Non-blocking email to admin ───────────────────────────────────────
+    if (loggedOutUser) {
+      notifyAdminLogout({ name: loggedOutUser.name, email: loggedOutUser.email, role: loggedOutUser.role });
+    }
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Failed to logout' });
@@ -179,13 +195,14 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
     }
 
     res.json({
-      userId: user.userId,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      isOnline: user.isOnline,
-      lastSeen: user.lastSeen
+      userId:     user.userId,
+      name:       user.name,
+      email:      user.email,
+      role:       user.role,
+      chatAccess: user.chatAccess,
+      avatar:     user.avatar,
+      isOnline:   user.isOnline,
+      lastSeen:   user.lastSeen
     });
   } catch (error) {
     console.error('Get user error:', error);
