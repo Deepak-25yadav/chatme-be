@@ -1,0 +1,260 @@
+[
+    {
+        "_id": {
+            "$oid": "65b100000000000000000001"
+        },
+        "title": "SoundHelix Song 1",
+        "description": "Upbeat electronic instrumental - free sample audio",
+        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        "category": "mp3",
+        "type": "audio",
+        "pinned": true,
+        "pinnedAt": {
+            "$date": "2026-03-01T08:00:00.000Z"
+        },
+        "thumbnail": "",
+        "duration": "6:33",
+        "artist": "SoundHelix",
+        "tags": [
+            "instrumental",
+            "electronic",
+            "free"
+        ],
+        "pickVideoUrlFrom": "SoundHelix",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T08:00:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T08:00:00.000Z"
+        },
+        "__v": 0
+    },
+    {
+        "_id": {
+            "$oid": "65b100000000000000000002"
+        },
+        "title": "SoundHelix Song 2",
+        "description": "Smooth jazz style instrumental - free sample audio",
+        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        "category": "mp3",
+        "type": "audio",
+        "pinned": true,
+        "pinnedAt": {
+            "$date": "2026-03-01T07:00:00.000Z"
+        },
+        "thumbnail": "",
+        "duration": "5:45",
+        "artist": "SoundHelix",
+        "tags": [
+            "jazz",
+            "instrumental",
+            "smooth"
+        ],
+        "pickVideoUrlFrom": "SoundHelix",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T07:00:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T07:00:00.000Z"
+        },
+        "__v": 0
+    },
+    {
+        "_id": {
+            "$oid": "65b100000000000000000003"
+        },
+        "title": "SoundHelix Song 3",
+        "description": "Ambient chill instrumental - free sample audio",
+        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        "category": "mp3",
+        "type": "audio",
+        "pinned": false,
+        "pinnedAt": null,
+        "thumbnail": "",
+        "duration": "4:51",
+        "artist": "SoundHelix",
+        "tags": [
+            "ambient",
+            "chill",
+            "relax"
+        ],
+        "pickVideoUrlFrom": "SoundHelix",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T06:30:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T06:30:00.000Z"
+        },
+        "__v": 0
+    },
+    {
+        "_id": {
+            "$oid": "65b100000000000000000004"
+        },
+        "title": "SoundHelix Song 4",
+        "description": "Rock style instrumental - free sample audio",
+        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        "category": "mp3",
+        "type": "audio",
+        "pinned": false,
+        "pinnedAt": null,
+        "thumbnail": "",
+        "duration": "7:12",
+        "artist": "SoundHelix",
+        "tags": [
+            "rock",
+            "guitar",
+            "instrumental"
+        ],
+        "pickVideoUrlFrom": "SoundHelix",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T06:00:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T06:00:00.000Z"
+        },
+        "__v": 0
+    },
+    {
+        "_id": {
+            "$oid": "65b100000000000000000005"
+        },
+        "title": "SoundHelix Song 5",
+        "description": "Pop style uplifting instrumental",
+        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+        "category": "mp3",
+        "type": "audio",
+        "pinned": false,
+        "pinnedAt": null,
+        "thumbnail": "",
+        "duration": "5:10",
+        "artist": "SoundHelix",
+        "tags": [
+            "pop",
+            "uplifting",
+            "happy"
+        ],
+        "pickVideoUrlFrom": "SoundHelix",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T05:30:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T05:30:00.000Z"
+        },
+        "__v": 0
+    },
+    {
+        "_id": {
+            "$oid": "65b100000000000000000006"
+        },
+        "title": "Sample Audio (Wikipedia)",
+        "description": "Johann Sebastian Bach - Orchestral Suite No. 3 in D major (Public Domain)",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b6/Johann_Sebastian_Bach_-_Orchestral_Suite_No._3_in_D_major%2C_BWV_1068_-_IV._Bourr%C3%A9e.ogg/Johann_Sebastian_Bach_-_Orchestral_Suite_No._3_in_D_major%2C_BWV_1068_-_IV._Bourr%C3%A9e.ogg.mp3",
+        "category": "mp3",
+        "type": "audio",
+        "pinned": false,
+        "pinnedAt": null,
+        "thumbnail": "",
+        "duration": "1:38",
+        "artist": "Johann Sebastian Bach",
+        "tags": [
+            "classical",
+            "bach",
+            "orchestra",
+            "public domain"
+        ],
+        "pickVideoUrlFrom": "Wikimedia",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T05:00:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T05:00:00.000Z"
+        },
+        "__v": 0
+    },
+    {
+        "_id": {
+            "$oid": "65b100000000000000000007"
+        },
+        "title": "Blinding Lights (YouTube)",
+        "description": "The Weeknd - full video on YouTube",
+        "url": "https://www.youtube.com/watch?v=4NRXx6U8ABQ",
+        "category": "mp4",
+        "type": "video",
+        "pinned": true,
+        "pinnedAt": {
+            "$date": "2026-03-01T09:00:00.000Z"
+        },
+        "thumbnail": "https://img.youtube.com/vi/4NRXx6U8ABQ/hqdefault.jpg",
+        "duration": "3:22",
+        "artist": "The Weeknd",
+        "tags": [
+            "pop",
+            "retro",
+            "synth",
+            "english"
+        ],
+        "pickVideoUrlFrom": "YouTube",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T09:00:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T09:00:00.000Z"
+        },
+        "__v": 0
+    },
+    {
+        "_id": {
+            "$oid": "65b100000000000000000008"
+        },
+        "title": "Kesariya (YouTube)",
+        "description": "Brahmastra | Arijit Singh | Official Video",
+        "url": "https://www.youtube.com/watch?v=BddP6PYo2gs",
+        "category": "mp4",
+        "type": "video",
+        "pinned": true,
+        "pinnedAt": {
+            "$date": "2026-03-01T08:30:00.000Z"
+        },
+        "thumbnail": "https://img.youtube.com/vi/BddP6PYo2gs/hqdefault.jpg",
+        "duration": "4:28",
+        "artist": "Arijit Singh",
+        "tags": [
+            "bollywood",
+            "romantic",
+            "2022"
+        ],
+        "pickVideoUrlFrom": "YouTube",
+        "views": 0,
+        "likes": 0,
+        "isActive": true,
+        "createdAt": {
+            "$date": "2026-03-01T08:30:00.000Z"
+        },
+        "updatedAt": {
+            "$date": "2026-03-01T08:30:00.000Z"
+        },
+        "__v": 0
+    }
+]
