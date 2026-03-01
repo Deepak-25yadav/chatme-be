@@ -50,13 +50,15 @@ router.post('/signup', async (req: Request, res: Response) => {
     // Generate unique userId
     const userId = uuidv4();
 
-    // Create new user
+    // Create new user — always 'user' role, chatAccess false by default
+    // Admin can later change role to 'vip' and chatAccess to true via DB / admin panel
     const user = new User({
       userId,
       name,
       email,
-      password, // Will be hashed by pre-save hook
+      password,
       role: role === UserRole.ADMIN ? UserRole.ADMIN : UserRole.USER,
+      chatAccess: false,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
     });
 
@@ -74,11 +76,12 @@ router.post('/signup', async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'User registered successfully',
       user: {
-        userId: user.userId,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar
+        userId:     user.userId,
+        name:       user.name,
+        email:      user.email,
+        role:       user.role,
+        chatAccess: user.chatAccess,
+        avatar:     user.avatar
       },
       token,
       refreshToken
@@ -126,13 +129,14 @@ router.post('/login', async (req: Request, res: Response) => {
     res.json({
       message: 'Login successful',
       user: {
-        userId: user.userId,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen
+        userId:     user.userId,
+        name:       user.name,
+        email:      user.email,
+        role:       user.role,
+        chatAccess: user.chatAccess,
+        avatar:     user.avatar,
+        isOnline:   user.isOnline,
+        lastSeen:   user.lastSeen
       },
       token,
       refreshToken
@@ -179,13 +183,14 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
     }
 
     res.json({
-      userId: user.userId,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      isOnline: user.isOnline,
-      lastSeen: user.lastSeen
+      userId:     user.userId,
+      name:       user.name,
+      email:      user.email,
+      role:       user.role,
+      chatAccess: user.chatAccess,
+      avatar:     user.avatar,
+      isOnline:   user.isOnline,
+      lastSeen:   user.lastSeen
     });
   } catch (error) {
     console.error('Get user error:', error);

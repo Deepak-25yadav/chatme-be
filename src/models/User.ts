@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs';
 
 export enum UserRole {
   ADMIN = 'admin',
-  USER = 'user'
+  USER  = 'user',
+  VIP   = 'vip'     // Admin-assigned — grants chat access when chatAccess=true
 }
 
 export interface IUser extends Document {
@@ -12,6 +13,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+  chatAccess: boolean;    // Admin toggles — true = allowed into chat
   avatar?: string;
   isOnline: boolean;
   lastSeen: Date;
@@ -21,16 +23,18 @@ export interface IUser extends Document {
 }
 
 const UserSchema: Schema = new Schema({
-  userId: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, select: false },
-  role: { type: String, enum: Object.values(UserRole), default: UserRole.USER },
-  avatar: { type: String },
-  isOnline: { type: Boolean, default: false },
-  lastSeen: { type: Date, default: Date.now },
-  socketId: { type: String },
-  refreshToken: { type: String, select: false }
+  userId:      { type: String,  required: true, unique: true },
+  name:        { type: String,  required: true },
+  email:       { type: String,  required: true, unique: true, lowercase: true, trim: true },
+  password:    { type: String,  required: true, select: false },
+  role:        { type: String,  enum: Object.values(UserRole), default: UserRole.USER },
+  // chatAccess: admin sets to true to allow a user into chat
+  chatAccess:  { type: Boolean, default: false },
+  avatar:      { type: String  },
+  isOnline:    { type: Boolean, default: false },
+  lastSeen:    { type: Date,    default: Date.now },
+  socketId:    { type: String  },
+  refreshToken:{ type: String,  select: false }
 }, {
   timestamps: true
 });
