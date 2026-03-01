@@ -1,76 +1,59 @@
-import nodemailer from 'nodemailer';
-import { promises as dnsPromises } from 'dns';
-
-// ── Helper: send one email ─────────────────────────────────────────────────
-// ⚠️  Transporter is created INSIDE this function (not at module level).
-//     Reason: emailService.ts is imported before dotenv.config() runs in
-//     index.ts, so process.env.EMAIL_USER would be undefined at module load
-//     time → "Missing credentials for PLAIN" error.
-//     Creating it lazily here guarantees env vars are already loaded.
+// ── EmailService — powered by Resend HTTP API ──────────────────────────────
 //
-// 🔧 PRODUCTION FIX (Render free tier — definitive version):
-//     Problem 1 → Port 465 (SSL) is BLOCKED by Render's firewall.
-//                 Fix: use port 587 (STARTTLS).
-//     Problem 2 → Render has NO IPv6 routing. Node resolves smtp.gmail.com
-//                 to an AAAA (IPv6) address first → ENETUNREACH instantly.
-//                 `family: 4` and `lookup` are NOT in @types/nodemailer v7
-//                 so we cannot rely on nodemailer's own DNS path at all.
-//                 Fix: pre-resolve the hostname ourselves with dns.promises,
-//                 force family: 4, then pass the raw IPv4 IP as `host`.
-//                 Nodemailer never does a DNS lookup → IPv6 impossible.
+// WHY NOT SMTP / NODEMAILER?
+//   Render free tier firewalls ALL outbound SMTP TCP ports: 25, 465, 587.
+//   Every port we tried gave: ENETUNREACH (IPv6) or Connection timeout (IPv4).
+//   There is no SMTP config that can bypass this — it is a hard Render limit.
+//
+// WHY RESEND?
+//   Resend sends email via its HTTP API (port 443 / HTTPS).
+//   Port 443 is NEVER blocked on any cloud provider.
+//   Free tier: 3,000 emails/month, 100/day — plenty for admin alerts.
+//   No nodemailer, no SMTP, no DNS issues, no IPv6 issues.
+//   Node 20 has built-in fetch — zero new npm packages needed.
+//
+// SETUP (one-time, ~2 minutes):
+//   1. Sign up FREE at https://resend.com
+//   2. Dashboard → API Keys → Create Key → copy it
+//   3. Add  RESEND_API_KEY=re_xxxxxxxxxxxx  in Render → Environment tab
+//   4. (Optional) Add your domain in Resend to send FROM a custom address.
+//      Until then, the free sender  onboarding@resend.dev  is used.
+
 async function sendMail(subject: string, html: string): Promise<void> {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.ADMIN_EMAIL) {
-    console.warn('[EmailService] Email env vars not set — skipping notification.');
+  const apiKey     = process.env.RESEND_API_KEY;
+  const adminEmail = process.env.ADMIN_EMAIL;
+
+  if (!apiKey || !adminEmail) {
+    console.warn('[EmailService] RESEND_API_KEY or ADMIN_EMAIL not set — skipping.');
     return;
   }
 
-  // ── Step 1: Resolve smtp.gmail.com → IPv4 ourselves ──────────────────────
-  // By passing the resolved IP as `host`, nodemailer never calls dns.lookup
-  // internally, so it is impossible for it to pick an IPv6 address.
-  let smtpHost = 'smtp.gmail.com'; // fallback (will still work if dns fails)
-  try {
-    const { address } = await dnsPromises.lookup('smtp.gmail.com', { family: 4 });
-    smtpHost = address; // e.g. "142.250.xxx.xxx"
-    console.log(`[EmailService] Resolved smtp.gmail.com → ${smtpHost} (IPv4)`);
-  } catch (dnsErr: any) {
-    console.warn('[EmailService] DNS pre-resolve failed, falling back to hostname:', dnsErr.message);
-  }
-
-  // ── Step 2: Create transporter with the IPv4 address ─────────────────────
-  const transporter = nodemailer.createTransport({
-    host:   smtpHost,           // IPv4 address — bypasses nodemailer DNS entirely
-    port:   587,                // STARTTLS — Render allows this (port 465 is blocked)
-    secure: false,              // STARTTLS, not SSL
-    connectionTimeout: 15_000,  // 15 s — survives Render cold-start lag
-    greetingTimeout:   10_000,
-    socketTimeout:     15_000,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    },
-    tls: {
-      // Must keep smtp.gmail.com as servername even though we connect by IP,
-      // otherwise TLS certificate validation will fail.
-      servername:         'smtp.gmail.com',
-      rejectUnauthorized: true
-    }
-  } as any);  // `as any` only because @types/nodemailer v7 lags behind v8 runtime
+  // Sender: use verified domain address if provided, else Resend's free sender.
+  // To send FROM your own Gmail you must verify a domain in the Resend dashboard.
+  // For now, onboarding@resend.dev works perfectly for internal admin alerts.
+  const from = process.env.EMAIL_FROM ?? 'StreamPlay Alerts <onboarding@resend.dev>';
 
   try {
-    await transporter.sendMail({
-      from:    `"StreamPlay Alerts 🎵" <${process.env.EMAIL_USER}>`,
-      to:      process.env.ADMIN_EMAIL,
-      subject,
-      html
+    const response = await fetch('https://api.resend.com/emails', {
+      method:  'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({ from, to: [adminEmail], subject, html }),
     });
-    console.log(`[EmailService] ✅ Sent: ${subject}`);
+
+    if (response.ok) {
+      console.log(`[EmailService] ✅ Sent via Resend: ${subject}`);
+    } else {
+      const body = await response.text();
+      console.error(`[EmailService] ❌ Resend API error ${response.status}:`, body);
+    }
   } catch (err: any) {
-    // Non-blocking — log but never crash the API because of email failure
-    console.error('[EmailService] ❌ Failed to send email:', err.message);
+    // Non-blocking — never crash the API because of email failure
+    console.error('[EmailService] ❌ Failed to reach Resend API:', err.message);
   }
 }
-
-
 
 
 // ── Shared CSS for all emails ──────────────────────────────────────────────
