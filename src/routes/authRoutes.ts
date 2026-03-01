@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import User, { UserRole } from '../models/User';
 import { generateToken, generateRefreshToken, authenticateToken, AuthRequest } from '../middleware/auth.middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { notifyAdminSignup, notifyAdminLogin, notifyAdminLogout } from '../services/emailService';
 
 const router = express.Router();
 
@@ -86,6 +87,9 @@ router.post('/signup', async (req: Request, res: Response) => {
       token,
       refreshToken
     });
+
+    // ── Non-blocking email to admin ───────────────────────────────────────
+    notifyAdminSignup({ name: user.name, email: user.email, role: user.role });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ error: 'Failed to register user' });
@@ -141,6 +145,9 @@ router.post('/login', async (req: Request, res: Response) => {
       token,
       refreshToken
     });
+
+    // ── Non-blocking email to admin ───────────────────────────────────────
+    notifyAdminLogin({ name: user.name, email: user.email, role: user.role, chatAccess: user.chatAccess });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Failed to login' });
@@ -156,12 +163,17 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res: Response
     }
 
     // Clear refresh token
-    await User.findOneAndUpdate(
+    const loggedOutUser = await User.findOneAndUpdate(
       { userId: req.user.userId },
       { refreshToken: null }
     );
 
     res.json({ message: 'Logout successful' });
+
+    // ── Non-blocking email to admin ───────────────────────────────────────
+    if (loggedOutUser) {
+      notifyAdminLogout({ name: loggedOutUser.name, email: loggedOutUser.email, role: loggedOutUser.role });
+    }
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Failed to logout' });
