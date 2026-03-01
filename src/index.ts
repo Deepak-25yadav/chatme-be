@@ -10,6 +10,7 @@ import messageRoutes from './routes/messageRoutes';
 import authRoutes from './routes/authRoutes';
 import fileRoutes from './routes/fileRoutes';
 import musicRoutes from './routes/musicRoutes';
+import activityRoutes from './routes/activityRoutes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import { sanitizeInput } from './middleware/validation.middleware';
 
@@ -44,6 +45,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', fileRoutes);
 app.use('/api', messageRoutes);
 app.use('/api/music', musicRoutes);
+app.use('/api/activity', activityRoutes);
 
 // 404 handler
 app.use(notFound);

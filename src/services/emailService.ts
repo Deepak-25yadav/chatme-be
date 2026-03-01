@@ -136,3 +136,101 @@ export async function notifyAdminLogout(user: { name: string; email: string; rol
   );
   await sendMail(`👋 Logout: ${user.name} (${user.email})`, html);
 }
+
+// ── Activity tracking ──────────────────────────────────────────────────────
+// Called by POST /api/activity/track for any frontend user action.
+
+type ActivityUser = { name: string; email: string; role: string } | null;
+
+const ACTION_META: Record<string, { emoji: string; badge: string; color: string; title: string }> = {
+  home_visit: { emoji: '🏠', badge: '🏠 Home Visit',  color: '#7ab8ff', title: 'User Visited Home Page' },
+  play:       { emoji: '▶️', badge: '▶️ Track Played', color: '#5de095', title: 'User Played a Track'     },
+  add:        { emoji: '➕', badge: '➕ Track Added',   color: '#ff4e7e', title: 'New Track Added'          },
+  edit:       { emoji: '✏️', badge: '✏️ Track Edited',  color: '#ffc832', title: 'Track Edited'            },
+  delete:     { emoji: '🗑️', badge: '🗑️ Track Deleted', color: '#ff8080', title: 'Track Deleted'          },
+};
+
+/** Universal activity-to-email dispatcher */
+export async function sendActivityEmail(
+  action: string,
+  data: Record<string, any>,
+  user: ActivityUser
+): Promise<void> {
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const meta = ACTION_META[action] ?? {
+    emoji: '📌', badge: `📌 ${action.toUpperCase()}`, color: '#aaa', title: `Activity: ${action}`
+  };
+
+  // ── User rows ─────────────────────────────────────────────────────────────
+  const userRows = user
+    ? [
+        { label: 'User',  value: user.name  },
+        { label: 'Email', value: user.email },
+        { label: 'Role',  value: user.role  },
+      ]
+    : [{ label: 'User', value: 'Guest (not logged in)' }];
+
+  // ── Action-specific data rows ─────────────────────────────────────────────
+  let dataRows: { label: string; value: string }[] = [];
+
+  switch (action) {
+    case 'home_visit':
+      dataRows = [
+        { label: 'Page',      value: '/music (Home)' },
+        { label: 'User Agent', value: String(data.userAgent || 'unknown').slice(0, 80) },
+      ];
+      break;
+
+    case 'play':
+      dataRows = [
+        { label: 'Track',    value: data.title    || '-' },
+        { label: 'Artist',   value: data.artist   || '-' },
+        { label: 'Category', value: data.category || '-' },
+        { label: 'Views',    value: String(data.views ?? '-') },
+        { label: 'URL',      value: (data.url || '-').slice(0, 80) },
+      ];
+      break;
+
+    case 'add':
+      dataRows = [
+        { label: 'Track',    value: data.title    || '-' },
+        { label: 'Artist',   value: data.artist   || '-' },
+        { label: 'Category', value: data.category || '-' },
+        { label: 'URL',      value: (data.url || '-').slice(0, 80) },
+      ];
+      break;
+
+    case 'edit':
+      dataRows = [
+        { label: 'Track ID', value: data.id      || '-' },
+        { label: 'Title',    value: data.title   || '-' },
+        { label: 'Artist',   value: data.artist  || '-' },
+        { label: 'Category', value: data.category || '-' },
+      ];
+      break;
+
+    case 'delete':
+      dataRows = [
+        { label: 'Track ID', value: data.id    || '-' },
+        { label: 'Title',    value: data.title || '-' },
+        { label: 'Artist',   value: data.artist || '-' },
+      ];
+      break;
+
+    default:
+      dataRows = Object.entries(data).map(([k, v]) => ({
+        label: k, value: String(v).slice(0, 100)
+      }));
+  }
+
+  const allRows = [
+    ...userRows,
+    { label: '─────────', value: '──────────────────────────────────' },
+    ...dataRows,
+    { label: 'Time (IST)', value: now },
+  ];
+
+  const html = baseTemplate(meta.title, meta.badge, meta.color, allRows);
+  const subject = `${meta.emoji} ${meta.title}${data.title ? ': ' + data.title : ''}`;
+  await sendMail(subject, html);
+}
