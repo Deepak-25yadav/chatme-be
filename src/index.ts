@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import dns from 'dns';
 import { connectDB } from './config/database';
 import socketHandler from './socket/socketHandler';
 import messageRoutes from './routes/messageRoutes';
@@ -15,6 +16,11 @@ import { errorHandler, notFound } from './middleware/error.middleware';
 import { sanitizeInput } from './middleware/validation.middleware';
 
 dotenv.config();
+
+// 🔧 Force IPv4 globally — Render free tier has no IPv6 routing.
+// Any dns.lookup call (including inside nodemailer / http / net) will
+// prefer A records over AAAA records, preventing ENETUNREACH errors.
+dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 const server = http.createServer(app);
