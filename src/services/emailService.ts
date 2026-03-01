@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 // ── Helper: send one email ─────────────────────────────────────────────────
 // ⚠️  Transporter is created INSIDE this function (not at module level).
@@ -6,20 +7,42 @@ import nodemailer from 'nodemailer';
 //     index.ts, so process.env.EMAIL_USER would be undefined at module load
 //     time → "Missing credentials for PLAIN" error.
 //     Creating it lazily here guarantees env vars are already loaded.
+//
+// 🔧 PRODUCTION FIX (Render free tier):
+//     • DO NOT use  service: 'gmail'  — it resolves to port 465 (SSL) which
+//       Render's firewall BLOCKS outbound.
+//     • Use explicit host + port 587 (STARTTLS) — Render allows this.
+//     • force `family: 4` so Node always picks the IPv4 DNS answer.
+//       Without this, Node picks Gmail's AAAA (IPv6) record first and
+//       Render's free tier has no IPv6 routing → ENETUNREACH instantly.
+//     • Raise connectionTimeout to 15 s to survive Render cold-start lag.
 async function sendMail(subject: string, html: string): Promise<void> {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.ADMIN_EMAIL) {
     console.warn('[EmailService] Email env vars not set — skipping notification.');
     return;
   }
 
-  // Fresh transporter each call — reads current env values ✅
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
+  // ✅ Port 587 + STARTTLS — works on Render free tier
+  const smtpOptions: SMTPTransport.Options = {
+    host:   'smtp.gmail.com',
+    port:   587,
+    secure: false,              // STARTTLS (upgrades after connect)
+    connectionTimeout: 15_000,  // 15 s — handles Render cold-start lag
+    greetingTimeout:   10_000,
+    socketTimeout:     15_000,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
+    },
+    tls: {
+      rejectUnauthorized: false  // avoids cert-chain issues on Render
     }
-  });
+  };
+
+  // `family: 4` forces IPv4 DNS resolution — not in @types/nodemailer v7 yet,
+  // so we spread it in as `any` to avoid a compile error while keeping the
+  // rest of the options strongly typed.
+  const transporter = nodemailer.createTransport({ ...smtpOptions, family: 4 } as any);
 
   try {
     await transporter.sendMail({
