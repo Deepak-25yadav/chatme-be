@@ -1,25 +1,25 @@
 import nodemailer from 'nodemailer';
 
-// ── Nodemailer transporter (Gmail SMTP) ────────────────────────────────────
-// Set these in your .env / Render environment variables:
-//   EMAIL_USER   = your Gmail address  (e.g. yourapp@gmail.com)
-//   EMAIL_PASS   = Gmail App Password  (16-char, NOT your normal password)
-//   ADMIN_EMAIL  = admin's inbox       (can be same or different Gmail)
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
 // ── Helper: send one email ─────────────────────────────────────────────────
+// ⚠️  Transporter is created INSIDE this function (not at module level).
+//     Reason: emailService.ts is imported before dotenv.config() runs in
+//     index.ts, so process.env.EMAIL_USER would be undefined at module load
+//     time → "Missing credentials for PLAIN" error.
+//     Creating it lazily here guarantees env vars are already loaded.
 async function sendMail(subject: string, html: string): Promise<void> {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.ADMIN_EMAIL) {
     console.warn('[EmailService] Email env vars not set — skipping notification.');
     return;
   }
+
+  // Fresh transporter each call — reads current env values ✅
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
 
   try {
     await transporter.sendMail({
@@ -34,6 +34,7 @@ async function sendMail(subject: string, html: string): Promise<void> {
     console.error('[EmailService] ❌ Failed to send email:', err.message);
   }
 }
+
 
 // ── Shared CSS for all emails ──────────────────────────────────────────────
 function baseTemplate(title: string, badge: string, badgeColor: string, rows: { label: string; value: string }[]): string {
@@ -131,7 +132,7 @@ export async function notifyAdminLogout(user: { name: string; email: string; rol
       { label: 'Email',      value: user.email },
       { label: 'Role',       value: user.role },
       { label: 'Time (IST)', value: now }
-    ]
+  ]
   );
   await sendMail(`👋 Logout: ${user.name} (${user.email})`, html);
 }
