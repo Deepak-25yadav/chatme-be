@@ -1,57 +1,66 @@
-// ── EmailService — powered by Resend HTTP API ──────────────────────────────
+// ── EmailService — powered by Brevo (ex-Sendinblue) HTTP API ───────────────
 //
 // WHY NOT SMTP / NODEMAILER?
 //   Render free tier firewalls ALL outbound SMTP TCP ports: 25, 465, 587.
-//   Every port we tried gave: ENETUNREACH (IPv6) or Connection timeout (IPv4).
-//   There is no SMTP config that can bypass this — it is a hard Render limit.
+//   Connection timeout / ENETUNREACH on every attempt — hard Render limit.
 //
-// WHY RESEND?
-//   Resend sends email via its HTTP API (port 443 / HTTPS).
-//   Port 443 is NEVER blocked on any cloud provider.
-//   Free tier: 3,000 emails/month, 100/day — plenty for admin alerts.
-//   No nodemailer, no SMTP, no DNS issues, no IPv6 issues.
-//   Node 20 has built-in fetch — zero new npm packages needed.
+// WHY BREVO?
+//   • HTTP API on port 443 (HTTPS) — never blocked by any cloud provider.
+//   • FREE tier: 300 emails / day, unlimited contacts — no credit card.
+//   • Only requires verifying ONE sender email (click a confirmation link).
+//   • No domain DNS setup needed unlike Resend / SendGrid for custom senders.
+//   • Node 20 built-in fetch — zero new npm packages needed.
 //
-// SETUP (one-time, ~2 minutes):
-//   1. Sign up FREE at https://resend.com
-//   2. Dashboard → API Keys → Create Key → copy it
-//   3. Add  RESEND_API_KEY=re_xxxxxxxxxxxx  in Render → Environment tab
-//   4. (Optional) Add your domain in Resend to send FROM a custom address.
-//      Until then, the free sender  onboarding@resend.dev  is used.
+// ONE-TIME SETUP (~3 minutes):
+//   1. Sign up FREE at https://app.brevo.com
+//   2. Go to  My Account → SMTP & API → API Keys → Generate a New API Key
+//   3. Go to  Senders & Domains → Senders → Add Sender
+//      Enter any email you own (e.g. your Gmail) → click the verification link
+//   4. In Render → Environment, add:
+//         BREVO_API_KEY   = <your key from step 2>
+//         SENDER_EMAIL    = <the verified email from step 3>  e.g. you@gmail.com
+//         ADMIN_EMAIL     = <where alerts should go>          e.g. admin@gmail.com
 
 async function sendMail(subject: string, html: string): Promise<void> {
-  const apiKey     = process.env.RESEND_API_KEY;
-  const adminEmail = process.env.ADMIN_EMAIL;
+  const apiKey      = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.SENDER_EMAIL;
+  const adminEmail  = process.env.ADMIN_EMAIL;
 
-  if (!apiKey || !adminEmail) {
-    console.warn('[EmailService] RESEND_API_KEY or ADMIN_EMAIL not set — skipping.');
+  if (!apiKey || !senderEmail || !adminEmail) {
+    console.warn(
+      '[EmailService] Missing env vars (BREVO_API_KEY / SENDER_EMAIL / ADMIN_EMAIL) — skipping.'
+    );
     return;
   }
 
-  // Sender: use verified domain address if provided, else Resend's free sender.
-  // To send FROM your own Gmail you must verify a domain in the Resend dashboard.
-  // For now, onboarding@resend.dev works perfectly for internal admin alerts.
-  const from = process.env.EMAIL_FROM ?? 'StreamPlay Alerts <onboarding@resend.dev>';
+  const payload = {
+    sender:      { name: 'StreamPlay Alerts 🎵', email: senderEmail },
+    to:          [{ email: adminEmail }],
+    subject,
+    htmlContent: html,          // ← Brevo uses `htmlContent`, not `html`
+  };
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method:  'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type':  'application/json',
+        'api-key':      apiKey,         // ← Brevo uses `api-key` header (not Bearer)
+        'Content-Type': 'application/json',
+        'Accept':       'application/json',
       },
-      body: JSON.stringify({ from, to: [adminEmail], subject, html }),
+      body: JSON.stringify(payload),
     });
 
     if (response.ok) {
-      console.log(`[EmailService] ✅ Sent via Resend: ${subject}`);
+      const result = await response.json() as { messageId?: string };
+      console.log(`[EmailService] ✅ Sent via Brevo: ${subject} (id: ${result.messageId ?? '—'})`);
     } else {
-      const body = await response.text();
-      console.error(`[EmailService] ❌ Resend API error ${response.status}:`, body);
+      const errBody = await response.text();
+      console.error(`[EmailService] ❌ Brevo API ${response.status}:`, errBody);
     }
   } catch (err: any) {
-    // Non-blocking — never crash the API because of email failure
-    console.error('[EmailService] ❌ Failed to reach Resend API:', err.message);
+    // Non-blocking — never crash the API due to email failure
+    console.error('[EmailService] ❌ Failed to reach Brevo API:', err.message);
   }
 }
 
